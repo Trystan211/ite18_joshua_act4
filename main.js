@@ -23,7 +23,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
 const dynamicLight = new THREE.PointLight(0xffffff, 2, 50);
-dynamicLight.position.set(0, 80, 0);
+dynamicLight.position.set(0, 10, 0);
 scene.add(dynamicLight);
 
 // Ocean Geometry
@@ -76,7 +76,7 @@ loader.load(
     'https://trystan211.github.io/ite18_joshua_act4/low_poly_hot_dog.glb', // Replace with actual hotdog model URL
     (gltf) => {
         hotdog = gltf.scene;
-        hotdog.position.set(1, -2, 1);
+        hotdog.position.set(1, 1, 1);
         scene.add(hotdog);
 
         const box = new THREE.Box3().setFromObject(hotdog);
@@ -84,7 +84,7 @@ loader.load(
         box.getSize(size);
         console.log('Hotdog dimensions:', size);
 
-        hotdog.scale.set(16, 16, 16);
+        hotdog.scale.set(25, 25, 25);
     },
     undefined,
     (error) => {
