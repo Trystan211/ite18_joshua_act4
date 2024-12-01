@@ -4,13 +4,13 @@ import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xffffff, 10, 50);
+scene.background = new THREE.Color(0x000011); // Dark blue for night sky
 
 // Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x000000);
+renderer.setClearColor(0x87CEEB);
 document.body.appendChild(renderer.domElement);
 
 // Camera Setup
@@ -22,7 +22,7 @@ scene.add(camera);
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
-const dynamicLight = new THREE.PointLight(0xffffff, 2, 50);
+const dynamicLight = new THREE.PointLight(0xffffff, 4, 50);
 dynamicLight.position.set(0, 10, 0);
 scene.add(dynamicLight);
 
