@@ -4,7 +4,6 @@ import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/
 
 // === Basic Scene Setup ===
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000011); // Night sky
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -115,6 +114,34 @@ const rain = (() => {
     return points;
 })();
 scene.add(rain);
+
+// === Skybox ===
+const skyboxMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+        topColor: { value: new THREE.Color(0xff5733) }, // Ketchup red
+        bottomColor: { value: new THREE.Color(0xffd700) }, // Mustard yellow
+    },
+    vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+            vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+            gl_Position = projectionMatrix * viewMatrix * vec4(vWorldPosition, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        varying vec3 vWorldPosition;
+        void main() {
+            float height = normalize(vWorldPosition).y;
+            gl_FragColor = vec4(mix(bottomColor, topColor, max(height, 0.0)), 1.0);
+        }
+    `,
+    side: THREE.BackSide,
+});
+
+const skybox = new THREE.Mesh(new THREE.SphereGeometry(100, 32, 32), skyboxMaterial);
+scene.add(skybox);
 
 // === Animation ===
 const clock = new THREE.Clock();
