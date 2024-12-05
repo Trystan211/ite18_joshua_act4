@@ -2,147 +2,146 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.m
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
 
-// Scene Setup
+// === Basic Scene Setup ===
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000011); // Dark blue for night sky
+scene.background = new THREE.Color(0x000011); // Night sky
 
-// Renderer Setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x87CEEB);
 document.body.appendChild(renderer.domElement);
 
-// Camera Setup
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 5, 15);
 scene.add(camera);
 
-// Orbit Controls
-const controls = new OrbitControls(camera, renderer.domElement);
+// === Controls ===
+new OrbitControls(camera, renderer.domElement);
 
-// Dynamic Light
+// === Lighting ===
 const dynamicLight = new THREE.PointLight(0xffffff, 8, 50);
 dynamicLight.position.set(0, 10, 0);
 scene.add(dynamicLight);
 
-// Ocean Geometry
-const geometry = new THREE.PlaneGeometry(75, 75, 300, 300);
-geometry.rotateX(-Math.PI / 2);
+// === Ocean ===
+const ocean = (() => {
+    const geometry = new THREE.PlaneGeometry(75, 75, 300, 300);
+    geometry.rotateX(-Math.PI / 2);
 
-// Ocean Shader Material
-const oceanMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-        time: { value: 0 },
-        waveHeight: { value: 1.5 },
-        waveFrequency: { value: 0.5 },
-        deepColor: { value: new THREE.Color(0x8B8000) }, // Darker yellow
-        shallowColor: { value: new THREE.Color(0xFFD700) }, // Mustard yellow
-    },
-    vertexShader: `
-        uniform float time;
-        uniform float waveHeight;
-        uniform float waveFrequency;
-        varying vec2 vUv;
+    const material = new THREE.ShaderMaterial({
+        uniforms: {
+            time: { value: 0 },
+            waveHeight: { value: 1.5 },
+            waveFrequency: { value: 0.5 },
+            deepColor: { value: new THREE.Color(0x8B8000) },
+            shallowColor: { value: new THREE.Color(0xFFD700) },
+        },
+        vertexShader: `
+            uniform float time;
+            uniform float waveHeight;
+            uniform float waveFrequency;
+            varying vec2 vUv;
 
-        void main() {
-            vUv = uv;
-            vec3 pos = position;
-            pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
-            pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform vec3 deepColor;
-        uniform vec3 shallowColor;
-        varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                pos.y += sin(pos.x * waveFrequency + time) * waveHeight * 0.8;
+                pos.y += cos(pos.z * waveFrequency + time * 1.5) * waveHeight * 0.6;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform vec3 deepColor;
+            uniform vec3 shallowColor;
+            varying vec2 vUv;
 
-        void main() {
-            vec3 color = mix(deepColor, shallowColor, vUv.y * 0.8 + 0.2);
-            gl_FragColor = vec4(color, 1.0);
-        }
-    `,
-});
+            void main() {
+                vec3 color = mix(deepColor, shallowColor, vUv.y * 0.8 + 0.2);
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `,
+    });
 
-const ocean = new THREE.Mesh(geometry, oceanMaterial);
+    return new THREE.Mesh(geometry, material);
+})();
 scene.add(ocean);
 
-// Load Hotdog Model
-const loader = new GLTFLoader();
+// === Hotdog Model ===
 let hotdog = null;
 
-loader.load(
-    'https://trystan211.github.io/ite18_joshua_act4/low_poly_hot_dog.glb', // Replace with actual hotdog model URL
+new GLTFLoader().load(
+    'https://trystan211.github.io/ite18_joshua_act4/low_poly_hot_dog.glb',
     (gltf) => {
         hotdog = gltf.scene;
         hotdog.position.set(1, 1, 1);
+        hotdog.scale.set(25, 25, 25);
         scene.add(hotdog);
 
         const box = new THREE.Box3().setFromObject(hotdog);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        console.log('Hotdog dimensions:', size);
-
-        hotdog.scale.set(25, 25, 25);
+        console.log('Hotdog dimensions:', box.getSize(new THREE.Vector3()));
     },
     undefined,
-    (error) => {
-        console.error("Error loading the hotdog model:", error);
-    }
+    (error) => console.error("Failed to load hotdog model:", error)
 );
 
-// Rain Geometry
-const rainCount = 10000;
-const rainGeometry = new THREE.BufferGeometry();
-const rainPositions = [];
-const rainVelocities = [];
+// === Rain ===
+const rain = (() => {
+    const count = 10000;
+    const positions = [];
+    const velocities = [];
 
-for (let i = 0; i < rainCount; i++) {
-    const x = (Math.random() - 0.5) * 100;
-    const y = Math.random() * 50;
-    const z = (Math.random() - 0.5) * 100;
-    rainPositions.push(x, y, z);
-    rainVelocities.push(-0.2 - Math.random() * 0.5);
-}
+    for (let i = 0; i < count; i++) {
+        positions.push(
+            (Math.random() - 0.5) * 100,
+            Math.random() * 50,
+            (Math.random() - 0.5) * 100
+        );
+        velocities.push(-0.2 - Math.random() * 0.5);
+    }
 
-rainGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rainPositions, 3));
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
 
-const rainMaterial = new THREE.PointsMaterial({
-    color: 0xff0000, // Red color
-    size: 0.2,
-    transparent: true,
-    opacity: 0.8,
-});
+    const material = new THREE.PointsMaterial({
+        color: 0xff0000,
+        size: 0.2,
+        transparent: true,
+        opacity: 0.8,
+    });
 
-const rain = new THREE.Points(rainGeometry, rainMaterial);
+    const points = new THREE.Points(geometry, material);
+    points.userData.velocities = velocities;
+
+    return points;
+})();
 scene.add(rain);
 
-// Animation Loop
+// === Animation ===
 const clock = new THREE.Clock();
+
 function animate() {
-    const elapsedTime = clock.getElapsedTime();
+    const time = clock.getElapsedTime();
+    ocean.material.uniforms.time.value = time;
 
-    oceanMaterial.uniforms.time.value = elapsedTime;
+    const rainPositions = rain.geometry.attributes.position.array;
+    const rainVelocities = rain.userData.velocities;
 
-    const positions = rain.geometry.attributes.position.array;
-    for (let i = 0; i < rainCount; i++) {
-        positions[i * 3 + 1] += rainVelocities[i];
-        if (positions[i * 3 + 1] < 0) {
-            positions[i * 3 + 1] = 50;
-        }
+    for (let i = 0; i < rainPositions.length / 3; i++) {
+        const idx = i * 3 + 1; // Y coordinate
+        rainPositions[idx] += rainVelocities[i];
+        if (rainPositions[idx] < 0) rainPositions[idx] = 50;
     }
     rain.geometry.attributes.position.needsUpdate = true;
 
     dynamicLight.position.set(
-        10 * Math.sin(elapsedTime * 0.5),
+        10 * Math.sin(time * 0.5),
         10,
-        10 * Math.cos(elapsedTime * 0.5)
+        10 * Math.cos(time * 0.5)
     );
 
     if (hotdog) {
-        hotdog.position.x = Math.sin(elapsedTime * 0.5) * 5;
-        hotdog.position.z = Math.cos(elapsedTime * 0.5) * 5;
+        hotdog.position.x = Math.sin(time * 0.5) * 5;
+        hotdog.position.z = Math.cos(time * 0.5) * 5;
     }
 
     renderer.render(scene, camera);
@@ -151,6 +150,7 @@ function animate() {
 
 animate();
 
+// === Responsive Resize ===
 window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
