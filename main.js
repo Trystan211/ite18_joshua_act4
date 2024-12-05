@@ -22,7 +22,7 @@ scene.add(camera);
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // Dynamic Light
-const dynamicLight = new THREE.PointLight(0xffffff, 4, 50);
+const dynamicLight = new THREE.PointLight(0xffffff, 8, 50);
 dynamicLight.position.set(0, 10, 0);
 scene.add(dynamicLight);
 
@@ -136,7 +136,7 @@ function animate() {
 
     dynamicLight.position.set(
         10 * Math.sin(elapsedTime * 0.5),
-        5,
+        10,
         10 * Math.cos(elapsedTime * 0.5)
     );
 
