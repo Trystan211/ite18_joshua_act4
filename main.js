@@ -136,7 +136,7 @@ function animate() {
 
     dynamicLight.position.set(
         10 * Math.sin(elapsedTime * 0.5),
-        10,
+        5,
         10 * Math.cos(elapsedTime * 0.5)
     );
 
